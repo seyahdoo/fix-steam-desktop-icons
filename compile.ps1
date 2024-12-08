@@ -1,0 +1,1 @@
+pyinstaller --onefile --name fix-steam-desktop-icons main.py
