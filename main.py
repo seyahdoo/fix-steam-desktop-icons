@@ -2,7 +2,7 @@ import os
 import urllib.request
 
 def main():
-    print("Steam Desktop Shortcut Icon Fixer v1.0")
+    print("Steam Desktop Shortcut Icon Fixer v1.0.0")
     print("Seyyid Doğan")
     print("seyahdoo.com")
     print("............")
