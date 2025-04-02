@@ -2,8 +2,8 @@ import os
 import urllib.request
 
 def main():
-    print("Steam Desktop Shortcut Icon Fixer v1.0.0")
-    print("Seyyid Doğan")
+    print("Steam Desktop Shortcut Icon Fixer v1.0.1")
+    print("Toprak Seyyid Doğan")
     print("seyahdoo.com")
     print("............")
     print("............")
@@ -15,7 +15,8 @@ def main():
     for filename in os.listdir(desktop_directory):
         if filename.endswith(".url"):
             id_icon = get_id_icon_names(os.path.join(desktop_directory, filename))
-            id_icon_names.append(id_icon)
+            if id_icon[0] and id_icon[1]:
+                id_icon_names.append(id_icon)
 
     print("analyzing steam game icons directory and downloading missing icons")
     game_icons_directory = "C:\\Program Files (x86)\\Steam\\steam\\games"
@@ -48,4 +49,10 @@ def get_lines(path):
         return f.readlines()
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        print(e)
+        print("an unrecognized error occurred while running the application.")
+        print("press enter to exit...")
+        input()
