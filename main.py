@@ -11,13 +11,19 @@ def main():
     print("............")
 
     print("analyzing desktop for steam url shortcuts")
-    desktop_directory = os.path.join(os.path.join(os.environ["USERPROFILE"]), 'Desktop') 
     id_icon_names = []
-    for filename in os.listdir(desktop_directory):
-        if filename.endswith(".url"):
-            id_icon = get_id_icon_names(os.path.join(desktop_directory, filename))
-            if id_icon[0] and id_icon[1]:
-                id_icon_names.append(id_icon)
+    desktop_directories = [
+        os.path.join(os.path.join(os.environ["USERPROFILE"]), 'Desktop'),
+        os.path.join(os.path.join(os.environ["USERPROFILE"]), 'OneDrive', 'Desktop')
+    ]
+    for desktop_directory in desktop_directories:
+        if not os.path.isdir(desktop_directory):
+            continue
+        for filename in os.listdir(desktop_directory):
+            if filename.endswith(".url"):
+                id_icon = get_id_icon_names(os.path.join(desktop_directory, filename))
+                if id_icon[0] and id_icon[1]:
+                    id_icon_names.append(id_icon)
 
     print("analyzing steam game icons directory and downloading missing icons")
     game_icons_directory = os.path.join(find_steam_install_directory(), "steam\\games")
