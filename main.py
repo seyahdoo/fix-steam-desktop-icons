@@ -3,7 +3,7 @@ import urllib.request
 import winreg
 
 def main():
-    print("Steam Desktop Shortcut Icon Fixer v1.0.1")
+    print("Steam Desktop Shortcut Icon Fixer v1.0.2")
     print("Toprak Seyyid Doğan")
     print("seyahdoo.com")
     print("............")
