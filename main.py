@@ -1,5 +1,6 @@
 import os
 import urllib.request
+import winreg
 
 def main():
     print("Steam Desktop Shortcut Icon Fixer v1.0.1")
@@ -19,7 +20,7 @@ def main():
                 id_icon_names.append(id_icon)
 
     print("analyzing steam game icons directory and downloading missing icons")
-    game_icons_directory = "C:\\Program Files (x86)\\Steam\\steam\\games"
+    game_icons_directory = os.path.join(find_steam_install_directory(), "steam\\games")
     filenames = os.listdir(game_icons_directory)
     for id_icon in id_icon_names:
         if not id_icon[1] in filenames:
@@ -30,6 +31,20 @@ def main():
     print("everything done! refresh desktop to load the icons.")
     print("press enter to exit...")
     input()
+
+def find_steam_install_directory():
+    # try default location
+    if os.path.exists(os.path.join("C:\\Program Files (x86)\\Steam", "steam.exe")):
+        return "C:\\Program Files (x86)\\Steam"
+    
+    # try reading from windows registry
+    try:
+        access_registry = winreg.ConnectRegistry(None,winreg.HKEY_CLASSES_ROOT)
+        access_key = winreg.OpenKey(access_registry,r"steam\Shell\Open\Command")
+        steam_install_folder = winreg.EnumValue(access_key, 0)[1].strip("\" -- \"%1\"").strip("\"").replace("\\steam.exe", "")
+        return steam_install_folder
+    except:
+        raise Exception("Cannot find Steam install folder!")
 
 def get_id_icon_names(path):
     lines = get_lines(path)
@@ -49,7 +64,7 @@ def get_lines(path):
         return f.readlines()
 
 if __name__ == "__main__":
-    try:
+    try: 
         main()
     except Exception as e:
         print(e)
