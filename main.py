@@ -1,79 +1,56 @@
-import os
-import urllib.request
-import winreg
+import logging
+import sys
+from src.service import IconFixerService
+from src.finder import WindowsSteamFinder
+from src.provider import FileSystemShortcutProvider
+from src.downloader import WebIconDownloader
+from src.config import DesktopConfigLoader
+
+# Configure logging format and level
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
 
 def main():
-    print("Steam Desktop Shortcut Icon Fixer v1.0.2")
-    print("Toprak Seyyid Doğan")
-    print("seyahdoo.com")
-    print("............")
-    print("............")
-    print("............")
+    """Main entry point of the application."""
+    print("Steam Desktop Shortcut Icon Fixer v1.0.3\n")
+    logger = logging.getLogger(__name__)
 
-    print("analyzing desktop for steam url shortcuts")
-    id_icon_names = []
-    desktop_directories = [
-        os.path.join(os.path.join(os.environ["USERPROFILE"]), 'Desktop'),
-        os.path.join(os.path.join(os.environ["USERPROFILE"]), 'OneDrive', 'Desktop')
-    ]
-    for desktop_directory in desktop_directories:
-        if not os.path.isdir(desktop_directory):
-            continue
-        for filename in os.listdir(desktop_directory):
-            if filename.endswith(".url"):
-                id_icon = get_id_icon_names(os.path.join(desktop_directory, filename))
-                if id_icon[0] and id_icon[1]:
-                    id_icon_names.append(id_icon)
-
-    print("analyzing steam game icons directory and downloading missing icons")
-    game_icons_directory = os.path.join(find_steam_install_directory(), "steam\\games")
-    filenames = os.listdir(game_icons_directory)
-    for id_icon in id_icon_names:
-        if not id_icon[1] in filenames:
-            print(f"downloading {id_icon[0]} {id_icon[1]}")
-            imgURL = f"https://cdn.cloudflare.steamstatic.com/steamcommunity/public/images/apps/{id_icon[0]}/{id_icon[1]}"
-            urllib.request.urlretrieve(imgURL, os.path.join(game_icons_directory, id_icon[1]))
-
-    print("everything done! refresh desktop to load the icons.")
-    print("press enter to exit...")
-    input()
-
-def find_steam_install_directory():
-    # try default location
-    if os.path.exists(os.path.join("C:\\Program Files (x86)\\Steam", "steam.exe")):
-        return "C:\\Program Files (x86)\\Steam"
-    
-    # try reading from windows registry
     try:
-        access_registry = winreg.ConnectRegistry(None,winreg.HKEY_CLASSES_ROOT)
-        access_key = winreg.OpenKey(access_registry,r"steam\Shell\Open\Command")
-        steam_install_folder = winreg.EnumValue(access_key, 0)[1].strip("\" -- \"%1\"").strip("\"").replace("\\steam.exe", "")
-        return steam_install_folder
-    except:
-        raise Exception("Cannot find Steam install folder!")
+        try:
+            # 1. Initialize dependencies
+            dir_finder = WindowsSteamFinder()
+            shortcut_provider = FileSystemShortcutProvider()
+            icon_downloader = WebIconDownloader()
+            config_loader = DesktopConfigLoader()
 
-def get_id_icon_names(path):
-    lines = get_lines(path)
-    icon_name = ""
-    game_id = ""
-    for line in lines:
-        line = line.strip()
-        if line.endswith(".ico"):
-            icon_name = line.split("\\")[-1]
-        if "rungameid" in line:
-            game_id = line.split("/")[-1]
-    return (game_id, icon_name)
+            # 2. Get desktop paths
+            desktop_paths = config_loader.get_desktop_paths()
+            if not desktop_paths:
+                logger.error("No valid desktop paths found. Execution aborted.")
+                return
+            
+            logger.info(f"Targeting desktop paths: {desktop_paths}")
 
+            # 3. Initialize and execute application service
+            service = IconFixerService(
+                dir_finder=dir_finder,
+                shortcut_provider=shortcut_provider,
+                icon_downloader=icon_downloader
+            )
+            
+            service.execute(desktop_paths)
+            print("\neverything done! refresh desktop to load the icons.")
 
-def get_lines(path):
-    with open(path) as f:
-        return f.readlines()
+        except Exception as e:
+            logger.critical(f"Critical error occurred during execution: {str(e)}", exc_info=True)
+            print("\nan unrecognized error occurred while running the application.")
+            print("check the log for details.")
+
+    finally:
+        print("\npress enter to exit...")
+        input()
 
 if __name__ == "__main__":
-    try: 
-        main()
-    except Exception as e:
-        print(e)
-        print("an unrecognized error occurred while running the application.")
-        print("press enter to exit...")
-        input()
+    main()
