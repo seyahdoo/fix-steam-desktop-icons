@@ -1,49 +1,53 @@
 import os
-import json
+import winreg
 import logging
 from typing import List
 
 class DesktopConfigLoader:
     """Helper class for loading desktop path configuration."""
 
-    def __init__(self, config_file: str = "custom_location.json"):
-        self._config_file = config_file
+    def __init__(self):
         self._logger = logging.getLogger(__name__)
 
     def get_desktop_paths(self) -> List[str]:
         """Get desktop paths to scan.
         
-        Priority:
-        1. If config file exists and contains valid directory, use ONLY that custom path.
-        2. If no valid custom path, fallback to system default desktop locations.
+        Logic:
+        1. Query Windows Registry for the current user's Desktop folder.
+        2. Include standard default locations as fallbacks.
+        3. Return a list of unique, existing directories.
         """
-        # 1. Try to load custom path from config
-        if os.path.exists(self._config_file):
-            try:
-                with open(self._config_file, 'r', encoding='utf-8') as f:
-                    config = json.load(f)
-                    custom_path = config.get("desktop_path")
-                    if custom_path and os.path.isdir(custom_path):
-                        self._logger.info(f"Using custom desktop path: {custom_path}")
-                        return [custom_path]
-            except Exception as e:
-                self._logger.warning(f"Failed to read config file, falling back to defaults: {str(e)}")
+        desktop_directories = set()
+        
+        # 1. Query Registry
+        try:
+            key_path = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders"
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path) as key:
+                desktop_path_reg, _ = winreg.QueryValueEx(key, "Desktop")
+                # Expand environment variables (e.g., %USERPROFILE%)
+                expanded_path = os.path.expandvars(desktop_path_reg)
+                if os.path.isdir(expanded_path):
+                    self._logger.info(f"Found Registry Desktop path: {expanded_path}")
+                    desktop_directories.add(expanded_path)
+        except Exception as e:
+            self._logger.warning(f"Failed to query Registry for Desktop path: {str(e)}")
 
-        # 2. Fallback to system default paths
-        self._logger.debug("No valid custom path found. Retrieving system default desktop locations.")
-        attempted_paths = []
+        # 2. Add Standard Defaults
         user_profile = os.environ.get("USERPROFILE")
         if user_profile:
-            attempted_paths.append(os.path.join(user_profile, 'Desktop'))
-            attempted_paths.append(os.path.join(user_profile, 'OneDrive', 'Desktop'))
+            possible_defaults = [
+                os.path.join(user_profile, 'Desktop'),
+                os.path.join(user_profile, 'OneDrive', 'Desktop')
+            ]
+            for path in possible_defaults:
+                if os.path.isdir(path):
+                    desktop_directories.add(path)
         
-        self._logger.debug(f"Attempting to check system default paths: {attempted_paths}")
+        valid_paths = list(desktop_directories)
         
-        valid_defaults = [p for p in attempted_paths if os.path.isdir(p)]
-        
-        if valid_defaults:
-            self._logger.info(f"Identified valid system desktop paths: {valid_defaults}")
+        if valid_paths:
+            self._logger.info(f"Identified valid desktop paths to scan: {valid_paths}")
         else:
-            self._logger.warning(f"None of the attempted system paths exist: {attempted_paths}")
+            self._logger.error("No valid desktop paths could be found.")
             
-        return valid_defaults
+        return valid_paths

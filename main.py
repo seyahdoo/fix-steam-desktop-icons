@@ -14,7 +14,7 @@ logging.basicConfig(
 
 def main():
     """Main entry point of the application."""
-    print("Steam Desktop Shortcut Icon Fixer v1.0.3\n")
+    print("Steam Desktop Shortcut Icon Fixer v1.1.0\n")
     logger = logging.getLogger(__name__)
 
     try:
