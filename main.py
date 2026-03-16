@@ -12,19 +12,7 @@ def main():
 
     print("analyzing desktop for steam url shortcuts")
     id_icon_names = []
-    desktop_directories = set()
-    
-    # Source: https://stackoverflow.com/a/78463334
-    with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders") as key:
-        # Extracted string may contain unexpanded environment variables, such as "%USERPROFILE%\Desktop"
-        desktop_dir, _ = winreg.QueryValueEx(key, "Desktop")
-        # To expand the environment variable in the above string, use this form
-        desktop_directories.add(os.path.expandvars(winreg.QueryValueEx(key, "Desktop")[0]))
-        
-    desktop_directories.add(os.path.join(os.path.join(os.environ["USERPROFILE"]), 'Desktop'),)
-    desktop_directories.add(os.path.join(os.path.join(os.environ["USERPROFILE"]), 'OneDrive', 'Desktop'))
-    
-    for desktop_directory in desktop_directories:
+    for desktop_directory in get_desktop_directories():
         if not os.path.isdir(desktop_directory):
             continue
         for filename in os.listdir(desktop_directory):
@@ -45,6 +33,21 @@ def main():
     print("everything done! refresh desktop to load the icons.")
     print("press enter to exit...")
     input()
+
+def get_desktop_directories():
+    desktop_directories = set()
+
+    # Source: https://stackoverflow.com/a/78463334
+    with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders") as key:
+        # Extracted string may contain unexpanded environment variables, such as "%USERPROFILE%\Desktop"
+        desktop_dir, _ = winreg.QueryValueEx(key, "Desktop")
+        # To expand the environment variable in the above string, use this form
+        desktop_directories.add(os.path.expandvars(winreg.QueryValueEx(key, "Desktop")[0]))
+
+    desktop_directories.add(os.path.join(os.path.join(os.environ["USERPROFILE"]), 'Desktop'),)
+    desktop_directories.add(os.path.join(os.path.join(os.environ["USERPROFILE"]), 'OneDrive', 'Desktop'))
+    return desktop_directories
+
 
 def find_steam_install_directory():
     # try default location
