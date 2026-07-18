@@ -60,7 +60,7 @@ def find_steam_install_directory():
         access_key = winreg.OpenKey(access_registry,r"steam\Shell\Open\Command")
         steam_install_folder = winreg.EnumValue(access_key, 0)[1].strip("\" -- \"%1\"").strip("\"").replace("\\steam.exe", "")
         return steam_install_folder
-    except:
+    except Exception:
         raise Exception("Cannot find Steam install folder!")
 
 def get_id_icon_names(path):
